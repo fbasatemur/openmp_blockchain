@@ -40,15 +40,36 @@ void GPUSHA256(void* gpu3, void* gpu1, void* gpu2) {
 
 
 
-string WORDToStr(WORD* h) {
+string WORDToStr(WORD* h, string text1) {
 
-	// HEX BASARKEN BASTA 0 HEXADECIMAL SAYILARI BASMIYOR!!
-	// 1Bize her yer Trabzon! Bolumun en yakisikli hocasi Ibrahim Hoca'dir.0000000000000000000000000000000000000000000000000000000000000001
-	// 7012aa6c9739ce818be949de0919711225dc2b2e274688c1ecc204d0d134bc44
-	std::stringstream ss;
+	// HEX BASARKEN BASTAKI 0 HEXADECIMAL SAYILARI BASMIYORDU, IF ILE ONARILDI !
+	// "Bize her yer Trabzon! Bolumun en yakisikli hocasi Ibrahim Hoca'dir.000"
+	// 0b208c73de9744cf1aab8788d8217f24a0d34b98c6d0e7c17e16e0c4b84db276
+	
+	string result;
+	for (size_t i = 0; i < 8; i++)
+	{
+		std::stringstream ss;
+		ss << hex << h[i];
+		for (size_t j = 0; j < 8 - ss.str().length(); j++)
+			result += "0";
+		result += ss.str();
+	}
 
-	ss << hex << h[0] << hex << h[1] << hex << h[2] << hex << h[3] << hex << h[4] << hex << h[5] << hex << h[6] << hex << h[7];
-	return ss.str();
+	// DEBUG ICIN
+	if (result.length() != 64) {
+		string result;
+		for (size_t i = 0; i < 8; i++)
+		{
+			std::stringstream ss;
+			ss << hex << h[i];
+			for (size_t j = ss.str().length(); j < 8; j++)
+				result += "0";
+			result += ss.str();
+		}
+	}
+
+	return result;
 }
 
 //string decToBinary(uint n)

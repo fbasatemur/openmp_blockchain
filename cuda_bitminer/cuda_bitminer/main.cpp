@@ -14,6 +14,9 @@ bool Control(string& hash, size_t blockNum) {
 	for (size_t i = 0; i < blockNum; i++)
 		if (hash[i] != *"0")
 			return false;
+	
+	if (hash[blockNum] == *"0") return false;
+
 	return true;
 }
 
@@ -29,71 +32,42 @@ int main()
 	size_t nonce = 0;
 	WORD* k = InitializeKValues();
 	WORD* h = InitializeHashValues();
-//#pragma omp parallel sections num_threads(NUM_THREADS) shared(k) firstprivate(nonce, text1)
-//	{
 
-		BlockChain blockChain;
+
+	BlockChain blockChain;
 		
-		size_t textLen;
-		string hash = "000000000000000000000000000000000000000000000000000000000000000";
-		//cout << textLen << endl;
-		// 
-		blockChain.addBack(text1, hash);
-		text1 = blockChain.getText(nonce);		// uretilen text
-		while(true)
-		{
-			
-			string binText = PreSHA256(text1, textLen);
-			WORD* ha = RecursiveSHA256(binText.c_str(), h, k, textLen, 0);
-			// HEX hash degerleri farkli cikiyor
-			hash = WORDToStr(ha);
-			cout << hash << endl;
-			delete[] ha;
+	size_t textLen;
+	string hash = "0000000000000000000000000000000000000000000000000000000000000000";
 
-			if (!Control(hash, blockChain.counter))
-			{
-				// nonce increment (MUTEX)
-				nonce++;
-				text1 = blockChain.getText(nonce);
-			}
-			else {
-				blockChain.addBack(text1, hash);
-				text1 = blockChain.getText(0);
-			}
+	blockChain.addBack(text1, hash);
+	cout << "BLOCK: " << blockChain.current->blockNum << endl;
+	cout << "initialize hash: " << hash << "\t nonce: " << nonce << endl;
+	text1 = blockChain.getText(nonce);		// uretilen text
+	while(true)
+	{
+			
+		string binText = PreSHA256(text1, textLen);
+		WORD* ha = RecursiveSHA256(binText.c_str(), h, k, textLen, 0);
+		hash = WORDToStr(ha, text1);
+		delete[] ha;
+
+		if (!Control(hash, blockChain.counter))
+		{
+			// nonce increment (MUTEX)
+			nonce++;
+			text1 = blockChain.getText(nonce);
 		}
-//#pragma omp section
-//		{
-//
-//			blockChain.addBack(text1, hash);
-//			text1 = blockChain.getText(nonce);		// uretilen text
-//			while(true)
-//			{
-//				string binText = PreSHA256(text1, textLen);
-//				h = RecursiveSHA256(binText.c_str(), h, k, textLen, 0);
-//				hash = WORDToStr(h);
-//				cout << hash << endl;
-//
-//				if (!Control(hash, blockChain.counter))
-//				{
-//					// nonce increment (MUTEX)
-//					nonce++;
-//					text1 = blockChain.getText(nonce);
-//				}
-//				else {
-//					blockChain.addBack(text1, hash);
-//					text1 = blockChain.getText(0);
-//				}
-//			}
-//
-//
-//		}
-//#pragma omp section
-//		{
-//
-//		}
-//
-//
-//	}
+		else {
+			cout << "found hash: " << hash << "\t nonce: " << nonce << endl << endl;
+
+			blockChain.addBack(text1, hash);
+			nonce = 0;
+			cout << "BLOCK: " << blockChain.current->blockNum << endl;
+			cout << "initialize hash: "<< hash << "\t nonce: "<< nonce << endl;
+			text1 = blockChain.getText(nonce);
+		}
+	}
+
 
 
 	/*Cuda_Set_Device();
