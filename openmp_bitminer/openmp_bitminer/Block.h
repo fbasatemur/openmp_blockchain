@@ -8,7 +8,6 @@ struct Block {
 	size_t blockNum;
 	std::string data;
 	std::string hash;				// blogun aldigi hash burada
-	size_t nonce;
 	Block* next;
 };
 
@@ -62,8 +61,7 @@ void BlockChain::addBack(std::string data, std::string hash)
 	Block* v = new Block;
 	v->blockNum = counter;
 	v->data = data;
-	v->hash = hash;			// 
-	v->nonce = 0;		// initialize hexadecimal 0
+	v->hash = hash;		
 	v->next = NULL;
 	current = v;
 
@@ -94,7 +92,6 @@ void BlockChain::print()
 
 string BlockChain::getText(size_t nonce) {
 
-	current->nonce = nonce;
 	return to_string(current->blockNum) + current->data + current->hash + to_string(nonce);
 }
 

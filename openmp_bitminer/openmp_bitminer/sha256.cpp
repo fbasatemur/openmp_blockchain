@@ -1,10 +1,6 @@
 #pragma once
-#include <cuda_runtime_api.h>	
-#include "device_launch_parameters.h"
-
 #include <sstream>
-#include "sha256.cuh"
-
+#include "sha256.h"
 
 #define N 512
 #define ROTLEFT(a,b) (((a) << (b)) | ((a) >> (32-(b))))
@@ -17,26 +13,6 @@
 #define SUM1(a) (ROTRIGHT(a,6) ^ ROTRIGHT(a,11) ^ ROTRIGHT(a,25))
 
 using namespace std;
-
-
-__global__ void addKernel(int* c, int* a, int* b)
-{
-	int i = threadIdx.x;
-	c[i] = a[i] + b[i];
-}
-
-void GPUSHA256(void* gpu3, void* gpu1, void* gpu2) {
-	addKernel << < 1, 10 >> > ((int*)gpu3, (int*)gpu1, (int*)gpu2);
-}
-
-//__global__ void WORK(WORD* src, WORD* result)
-//{
-//	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-//	if (idx > 15) {
-//		result[idx] = SIGMA1(src[idx - 2]) + src[idx - 7] + SIGMA0(src[idx - 15]) + src[idx - 16];
-//	}
-//}
-
 
 
 
@@ -54,19 +30,6 @@ string WORDToStr(WORD* h, string text1) {
 		for (size_t j = 0; j < 8 - ss.str().length(); j++)
 			result += "0";
 		result += ss.str();
-	}
-
-	// DEBUG ICIN
-	if (result.length() != 64) {
-		string result;
-		for (size_t i = 0; i < 8; i++)
-		{
-			std::stringstream ss;
-			ss << hex << h[i];
-			for (size_t j = ss.str().length(); j < 8; j++)
-				result += "0";
-			result += ss.str();
-		}
 	}
 
 	return result;
@@ -196,6 +159,7 @@ WORD* SHA256(WORD* words, WORD* h, WORD* k) {
 	abcdefgh[6] = h[6] + abcdefgh[6];
 	abcdefgh[7] = h[7] + abcdefgh[7];
 
+	delete[] expandedWord;
 	return abcdefgh;
 }
 
@@ -220,7 +184,7 @@ WORD* BinTextToWORD(const char* text) {
 }
 
 // PARALLEL
-string TextToBinaryStr(string words)
+string TextToBinaryStr(string& words)
 {
 	string binaryString = "";
 	for (char& _char : words) {
@@ -230,7 +194,7 @@ string TextToBinaryStr(string words)
 }
 
 // PARALLEL
-string PreSHA256(string text, size_t& textLen) {
+string PreSHA256(string& text, size_t& textLen) {
 
 	string binText = TextToBinaryStr(text);
 	size_t binTextLen = binText.length();							// text in binary halinin uzunlugu
@@ -256,5 +220,8 @@ WORD* RecursiveSHA256(const char* binText, WORD* h, WORD* k, size_t textLen, siz
 
 	WORD* wordBlock = BinTextToWORD(&binText[step]);
 	WORD* hash = SHA256(wordBlock, h, k);
+	delete[] wordBlock;
+	if (step != 0) delete[] h;
+
 	RecursiveSHA256(binText, hash, k, textLen, step + N);
 }
