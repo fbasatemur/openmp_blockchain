@@ -3,7 +3,6 @@
 #include "sha256.h"
 
 #define N 512
-#define ROTLEFT(a,b) (((a) << (b)) | ((a) >> (32-(b))))
 #define ROTRIGHT(a,b) (((a) >> (b)) | ((a) << (32-(b))))
 #define SIGMA0(a) (ROTRIGHT(a,7) ^ ROTRIGHT(a,18) ^ ((a) >> 3))
 #define SIGMA1(a) (ROTRIGHT(a,17) ^ ROTRIGHT(a,19) ^ ((a) >> 10))
@@ -18,10 +17,10 @@ using namespace std;
 
 string WORDToStr(WORD* h, string text1) {
 
-	// HEX BASARKEN BASTAKI 0 HEXADECIMAL SAYILARI BASMIYORDU, IF ILE ONARILDI !
+	// HEX BASARKEN BASTAKI 0 HEXADECIMAL SAYILARI BASMIYORDU, FOR ILE ONARILDI !
 	// "Bize her yer Trabzon! Bolumun en yakisikli hocasi Ibrahim Hoca'dir.000"
 	// 0b208c73de9744cf1aab8788d8217f24a0d34b98c6d0e7c17e16e0c4b84db276
-	
+
 	string result;
 	for (size_t i = 0; i < 8; i++)
 	{
@@ -34,52 +33,6 @@ string WORDToStr(WORD* h, string text1) {
 
 	return result;
 }
-
-//string decToBinary(uint n)
-//{
-//	uint i = 0, binaryNum[64];
-//
-//	while (n > 0) {
-//		binaryNum[i] = n % 2;
-//		n = n / 2;
-//		i++;
-//	}
-//
-//	string result;
-//	for (int step = i - 1; step >= 0; step--) {
-//		result += to_string(binaryNum[step]);
-//	}
-//	return result;
-//}
-//
-//void decToHexa(int num)
-//{
-//	// char array to store hexadecimal number
-//	char hexaDeciNum[64];
-//	int i = 0, temp = 0;
-//
-//	while (num != 0) {
-//
-//		temp = num % 16;
-//
-//		if (temp < 10) hexaDeciNum[i] = temp + 48;
-//		else hexaDeciNum[i] = temp + 55;
-//
-//		num = num / 16;
-//		i++;
-//	}
-//
-//	// hexadecimal number array in reverse order
-//	char temp1;
-//	int j = 0;
-//	for (int step = i - 1; step >= 0; step--) {
-//		temp1 = hexaDeciNum[step];
-//		hexaDeciNum[step] = hexaDeciNum[j];
-//		hexaDeciNum[j] = temp1;
-//		j++;
-//	}
-//}
-
 
 WORD* InitializeHashValues() {
 
@@ -98,29 +51,26 @@ WORD* InitializeHashValues() {
 WORD* InitializeKValues() {
 
 	WORD* k = new WORD[64]{
-	0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
-	0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
-	0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
-	0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
-	0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
-	0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
-	0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
-	0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2 };
+	0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+	0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+	0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+	0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+	0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+	0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+	0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+	0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2 };
 
 	return k;
 }
 
-
 void WordExtend(WORD* words) {
 
-	// seri olmak zorunda
 	for (size_t i = 16; i < 64; i++)
 		words[i] = SIGMA1(words[i - 2]) + words[i - 7] + SIGMA0(words[i - 15]) + words[i - 16];
 }
 
 void WordCompress(WORD* abcdefgh, WORD* k, WORD* expandedWords) {
 
-	// seri olmak zorunda, YALNIZCA FOR ICI PARALEL YAPILABILIR, 64 TH OLMAZ
 	WORD temp1, temp2;
 	for (size_t i = 0; i < 64; ++i) {
 		temp1 = abcdefgh[7] + SUM1(abcdefgh[4]) + CH(abcdefgh[4], abcdefgh[5], abcdefgh[6]) + k[i] + expandedWords[i];
@@ -165,25 +115,19 @@ WORD* SHA256(WORD* words, WORD* h, WORD* k) {
 
 WORD* BinTextToWORD(const char* text) {
 
-	// tum degerler 0 ile initialize edilir
 	WORD* words = new WORD[64]();
+	char test[32];
 
-	// 16 TH ILE PARALLEL 
 	// gelen blokta her biri, bir biti temsil eden 16 * 32 => 512 karakter var
 	for (size_t i = 0; i < 16; i++)
 	{
-		for (size_t j = 0; j < 32; j++)
-		{
-			words[i] = ROTLEFT(words[i], 1);
-			if (text[i * 32 + j] == *"1")
-				words[i] = words[i] | (WORD)1;
-		}
+		memcpy(test, text + (i * 32), 32);
+		words[i] = std::stoul(test, 0, 2);
 	}
 
 	return words;
 }
 
-// PARALLEL
 string TextToBinaryStr(string& words)
 {
 	string binaryString = "";
@@ -193,7 +137,6 @@ string TextToBinaryStr(string& words)
 	return binaryString;
 }
 
-// PARALLEL
 string PreSHA256(string& text, size_t& textLen) {
 
 	string binText = TextToBinaryStr(text);

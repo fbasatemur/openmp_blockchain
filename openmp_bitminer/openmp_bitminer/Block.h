@@ -19,11 +19,12 @@ struct BlockChain
 	BlockChain();									
 	~BlockChain();										
 
-	bool empty() const;									// is list empty?
-	void addBack(std::string data, std::string hash);							// add to back of list
-	void removeFront();									// remove front item of list
-	void print();
-	string getText(size_t nonce);
+	bool Empty() const;									// is list empty?
+	void AddBack(std::string data, std::string hash);							// add to back of list
+	void RemoveFront();									// remove front item of list
+	void PrintBlock(int __cdecl tid, size_t& privateNonce);
+	string GetText(size_t& privateNonce);
+	bool Control(string& hash);
 };
 
 BlockChain::BlockChain()							// constructor
@@ -34,17 +35,17 @@ BlockChain::BlockChain()							// constructor
 
 BlockChain::~BlockChain()							// destructor
 {
-	while (!empty()) removeFront();
+	while (!Empty()) RemoveFront();
 }
 
-bool BlockChain::empty() const							// is list empty?
+bool BlockChain::Empty() const							// is list empty?
 {
 	return head == NULL;
 }
 
-void BlockChain::removeFront()							// remove front item
+void BlockChain::RemoveFront()							// remove front item
 {
-	if (empty())
+	if (Empty())
 	{
 		std::cout << "List is empty !" << endl;
 		return;
@@ -55,7 +56,7 @@ void BlockChain::removeFront()							// remove front item
 	delete temp;												// delete the old head
 }
 
-void BlockChain::addBack(std::string data, std::string hash)
+void BlockChain::AddBack(std::string data, std::string hash)
 {
 	counter++;
 	Block* v = new Block;
@@ -74,24 +75,24 @@ void BlockChain::addBack(std::string data, std::string hash)
 	}
 }
 
-void BlockChain::print()
+void BlockChain::PrintBlock(int __cdecl tid, size_t& privateNonce)
 {
-	if (empty())
-	{
-		cout << "List is empty !" << endl;
-		return;
-	}
-
-	Block* first = head;
-	while (first != NULL)
-	{
-		cout << first->blockNum << "\t" << first->hash << endl;
-		first = first->next;
-	}
+	cout << "BLOCK: " << current->blockNum << "\t tid: " << tid << endl;
+	cout << "initialize hash: " << current->hash << "\t nonce: " << privateNonce << "\t tid: " << tid << endl;
 }
 
-string BlockChain::getText(size_t nonce) {
+string BlockChain::GetText(size_t& privateNonce) {
 
-	return to_string(current->blockNum) + current->data + current->hash + to_string(nonce);
+	return to_string(current->blockNum) + current->data + current->hash + to_string(privateNonce);
 }
 
+bool BlockChain::Control(string& hash) {
+
+	for (size_t i = 0; i < current->blockNum; i++)
+		if (hash[i] != *"0")
+			return false;
+
+	if (hash[current->blockNum] == *"0") return false;
+
+	return true;
+}

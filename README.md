@@ -1,1 +1,1 @@
-# cuda_bitminer
+# OpenMP Bitminer
