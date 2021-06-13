@@ -1,10 +1,8 @@
 ﻿#include <stdlib.h>		
 #include <iostream>
 
-#include "sha256.h"
-//#include "Sha.h"
-
-#include "Block.h"
+#include "Sha.h"
+#include "BlockChain.h"
 #include <omp.h>
 #include <iomanip>
 
@@ -13,39 +11,39 @@ using namespace std;
 
 int main()
 {
-	//string inputText = "Bize her yer Trabzon! Bölümün en yakışıklı hocası İbrahim Hoca’dır";		// pdf text
-	string inputText = "Bize her yer Trabzon! Bolumun en yakisikli hocasi Ibrahim Hoca'dir";		// ascii
+	//string inputText = "Bize her yer Trabzon! Bölümün en yakışıklı hocası İbrahim Hoca’dır";		// unicode text
+	string inputText = "Bize her yer Trabzon! Bolumun en yakisikli hocasi Ibrahim Hoca'dir";		// ascii text
 	string initializeHash = "0000000000000000000000000000000000000000000000000000000000000000";
 
-	size_t numThreads;
+	size_t threadNums;
 	cout << "THREAD NUMS: ";
-	cin >> numThreads;
+	cin >> threadNums;
 
 	size_t nonce = 0;
 	bool flag = false;
-	size_t acceptNonce;			// onaylanmasi gereken nonce
-	size_t acceptCounter;		// onaylayan thread sayisi
+	size_t acceptNonce;			// acceptNonce will be approved by other threads
+	size_t acceptCounter;		// accepted threads numbers
 
-	size_t textLen;
-	WORD* k = InitializeKValues();
-	WORD* h = InitializeHashValues();
-	//WORD* sha256K = InitializeK();
+	WORD* sha256K = InitializeK();
 	BlockChain blockChain;
 	blockChain.AddBack(inputText, initializeHash);
-	cout << "\n#BLOCK: " << blockChain.current->blockNum << "\t nonce: " << nonce << "\t tid: " << omp_get_thread_num() << endl;
-	string privateText;
-	size_t privateNonce;
+	cout << "\n# BLOCK: " << blockChain.current->blockNum << "\t tid: " << omp_get_thread_num() << endl;
+	cout << "Hash initialized: " << blockChain.current->initializeHash << "\t nonce: " << nonce << "\t \t tid: " << omp_get_thread_num() << endl;
+
 	size_t entryCounter;
 	omp_lock_t lock;
 	omp_init_lock(&lock);
 	double start = omp_get_wtime(), end;
+	double globalTime = start;
+	int sec, h, m;
 
-#pragma omp parallel shared(nonce,numThreads,textLen,flag,acceptNonce,acceptCounter,blockChain,entryCounter, start,end,h,k) num_threads(numThreads) firstprivate(privateText) private(privateNonce)
+#pragma omp parallel num_threads(threadNums)
 	{
+		string privateText, privateHash;
+		size_t privateNonce;
 
 #pragma omp critical 
 		{
-			cout << "initialize hash: " << blockChain.current->hash << "\t nonce: " << nonce << "\t tid: " << omp_get_thread_num() << endl;
 			privateNonce = nonce;
 			nonce++;
 		}
@@ -53,13 +51,8 @@ int main()
 
 		while (true)
 		{
-			privateText = blockChain.GetText(privateNonce);		// uretilen text
-
-			string binText = PreSHA256(privateText, textLen);
-			WORD* ha = RecursiveSHA256(binText.c_str(), h, k, textLen, 0);
-			string privateHash = WORDToStr(ha, privateText);
-			delete[] ha;
-			//string privateHash = Sha256(privateText, sha256K);
+			privateText = blockChain.GetText(privateNonce);		// text generate for SHA256
+			privateHash = Sha256(privateText, sha256K);			// hash calculated
 
 			if (blockChain.Control(privateHash))
 			{
@@ -69,54 +62,55 @@ int main()
 					entryCounter = 0;
 					acceptNonce = privateNonce;
 					flag = true;
-					while (acceptCounter < numThreads / 2) {}
-					while (entryCounter < numThreads - 1) {}
-					blockChain.AddBack(privateText, privateHash);			// onay alindi bir sonraki blogu hazirla
-					
+					while (acceptCounter < threadNums / 2) {}		// must accepted N/2 threads 
+					while (entryCounter < threadNums - 1) {}		// wait threadNums-1 threads
+
+					// privateNonce accepted for other threads, print block informations
+					end = omp_get_wtime();
+					cout << "Hash found: " << privateHash << "\t \t nonce: " << acceptNonce << "\t \t tid: " << omp_get_thread_num() << endl << "Text: " << privateText << endl << "Block Run-time(s): " << std::setprecision(3) << fixed << (end - start);
+					start = omp_get_wtime();
+
+					sec = int(end - globalTime);
+					h = int(sec / 3600);
+					m = int((sec - (3600 * h)) / 60);
+					cout << "\t Total Run-time: " << h << ":" << m << ":" << (sec - (3600 * h) - (m * 60)) << endl;
+
+					blockChain.AddBack(privateText, privateHash);			// add next block
 					nonce = 0;
 					privateNonce = nonce;
 					nonce++;
 
-					end = omp_get_wtime();
-					cout << privateText << endl << "hash found: " << privateHash << "\t nonce: " << acceptNonce << "\t tid: " << omp_get_thread_num() << "\t time: " << std::setprecision(3) << (end - start) << endl << endl << endl;
-					start = omp_get_wtime();
-
-					blockChain.PrintBlock(omp_get_thread_num(), privateNonce);
+					cout << endl << endl << "# BLOCK: " << blockChain.blockCounter << "\t tid: " << omp_get_thread_num() << endl;
+					cout << "Hash initialized: " << blockChain.current->initializeHash << "\t nonce: " << privateNonce << "\t \t tid: " << omp_get_thread_num() << endl;
+					
 					flag = false;
 				}
 			}
 			else {
-
-				// Nonce bulunamadi, nonce increment
+				// nonce couldnt found, nonce increment
 				omp_set_lock(&lock);
 				privateNonce = nonce;
 				nonce++;
 				omp_unset_lock(&lock);
 			}
-			
-			if (flag) {
 
+			if (flag) 
+			{
 				privateText = blockChain.GetText(acceptNonce);
-
-				binText = PreSHA256(privateText, textLen);
-				WORD* ha = RecursiveSHA256(binText.c_str(), h, k, textLen, 0);
-				privateHash = WORDToStr(ha, privateText);
-				delete[] ha;
-				//privateHash = Sha256(privateText, sha256K);
+				privateHash = Sha256(privateText, sha256K);
 
 #pragma omp critical
 				{
-					if (acceptCounter < numThreads / 2)			// total de N/2 + kendi = N/2+1 thread onaylamis oldu
+					if (acceptCounter < threadNums / 2)			// must accepted N/2 threads => accepted total: N/2 + 1(main thread) threads 
 					{
 						if (blockChain.Control(privateHash)) {
-							cout << "hash accepted: " << privateHash << "\t nonce: " << acceptNonce << "\t tid: " << omp_get_thread_num() << endl;
-							acceptCounter++;
+							cout << "Hash accepted: " << privateHash << "\t \t nonce: " << acceptNonce << "\t \t tid: " << omp_get_thread_num() << endl;
+							++acceptCounter;
 						}
 						else cout << "Error tid: " << omp_get_thread_num() << endl;
 					}
-					entryCounter++;
+					++entryCounter;
 				}
-
 				while (flag) {}
 
 				omp_set_lock(&lock);

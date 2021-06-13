@@ -3,7 +3,7 @@
 #include "Sha.h"
 #pragma warning(disable:4996)
 
-#define BLOCK_SIZE 64
+#define BLOCKSIZE 64
 #define ROTRIGHT(a,b) (((a) >> (b)) | ((a) << (32-(b))))
 #define CH(a,b,c) (((a) & (b)) ^ (~(a) & (c)))
 #define MAJ(a,b,c) (((a) & (b)) ^ ((a) & (c)) ^ ((b) & (c)))
@@ -11,15 +11,15 @@
 #define SIGMA1(a) (ROTRIGHT(a,17) ^ ROTRIGHT(a,19) ^ ((a) >> 10))
 #define SUM0(a) (ROTRIGHT(a,2) ^ ROTRIGHT(a,13) ^ ROTRIGHT(a,22))
 #define SUM1(a) (ROTRIGHT(a,6) ^ ROTRIGHT(a,11) ^ ROTRIGHT(a,25))
-#define WORDTOCHAR(a, str)                 \
-{                                             \
+#define WORDTOCHAR(a, str)                            \
+{                                                     \
     *((str) + 3) = (unsigned char) ((a)      );       \
     *((str) + 2) = (unsigned char) ((a) >>  8);       \
     *((str) + 1) = (unsigned char) ((a) >> 16);       \
     *((str) + 0) = (unsigned char) ((a) >> 24);       \
 }
-#define CHARTOWORD(str, x)                   \
-{                                             \
+#define CHARTOWORD(str, x)                  \
+{                                           \
     *(x) =   ((WORD) *((str) + 3)      )    \
            | ((WORD) *((str) + 2) <<  8)    \
            | ((WORD) *((str) + 1) << 16)    \
@@ -72,18 +72,18 @@ void WordCompress(WORD* abcdefgh, WORD* sha256K, WORD* expandedWords) {
     }
 }
 
-void Transform(const unsigned char* message, WORD block_nb, WORD * sha256K, WORD* sha256H)
+void Transform(const unsigned char* message, WORD blockNum, WORD * sha256K, WORD* sha256H)
 {
     WORD expandedWords[64];
     WORD abcdefgh[8];
 
-    const unsigned char* sub_block;
+    const unsigned char* tempBlock;
     int i,j;
-    for (i = 0; i < (int)block_nb; i++) 
+    for (i = 0; i < (int)blockNum; i++) 
     {
-        sub_block = message + (i << 6);
+        tempBlock = message + (i << 6);
         for (j = 0; j < 16; j++) {
-            CHARTOWORD(&sub_block[j << 2], &expandedWords[j]);
+            CHARTOWORD(&tempBlock[j << 2], &expandedWords[j]);
         }
         // kelime genisletme algoritmasi
         WordExtend(expandedWords);
@@ -100,47 +100,46 @@ void Transform(const unsigned char* message, WORD block_nb, WORD * sha256K, WORD
     }
 }
 
-void Update(const unsigned char* message, WORD len, WORD* sha256K, WORD* sha256H, unsigned char* m_block, WORD& m_tot_len,
-WORD& m_len)
+void Update(const unsigned char* message, WORD len, WORD* sha256K, WORD* sha256H, unsigned char* msgBlock, WORD& msgTotalLen,
+WORD& msgLen)
 {
+    WORD blockNum, remLen, tempLen;
+    const unsigned char* shiftedMsg;
+    tempLen = BLOCKSIZE - msgLen;
+    remLen = len < tempLen ? len : tempLen;
 
-    WORD block_nb, new_len, rem_len, tmp_len;
-    const unsigned char* shifted_message;
-    tmp_len = BLOCK_SIZE - m_len;
-    rem_len = len < tmp_len ? len : tmp_len;
-
-    memcpy(&m_block[m_len], message, rem_len);
-    if (m_len + len < BLOCK_SIZE) {
-        m_len += len;
+    memcpy(&msgBlock[msgLen], message, remLen);
+    if (msgLen + len < BLOCKSIZE) {
+        msgLen += len;
         return;
     }
 
-    new_len = len - rem_len;
-    block_nb = new_len / BLOCK_SIZE;
-    shifted_message = message + rem_len;
+    len -= remLen;
+    blockNum = len / BLOCKSIZE;
+    shiftedMsg = message + remLen;
 
-    Transform(m_block, 1, sha256K, sha256H);
-    Transform(shifted_message, block_nb, sha256K, sha256H);
-    rem_len = new_len % BLOCK_SIZE;
-    memcpy(m_block, &shifted_message[block_nb << 6], rem_len);
-    m_len = rem_len;
-    m_tot_len += (block_nb + 1) << 6;
+    Transform(msgBlock, 1, sha256K, sha256H);
+    Transform(shiftedMsg, blockNum, sha256K, sha256H);
+    remLen = len % BLOCKSIZE;
+    memcpy(msgBlock, &shiftedMsg[blockNum << 6], remLen);
+    msgLen = remLen;
+    msgTotalLen += (blockNum + 1) << 6;
 }
 
-void Final(unsigned char* digest, WORD* sha256K, WORD* sha256H, unsigned char* m_block, WORD& m_tot_len, WORD& m_len)
+void Final(unsigned char* digest, WORD* sha256K, WORD* sha256H, unsigned char* msgBlock, WORD& msgTotalLen, WORD& msgLen)
 {
-    WORD block_nb, pm_len, len_b;
+    WORD blockNum, tempLen, lenB;
 
-    block_nb = (1 + ((BLOCK_SIZE - 9) < (m_len % BLOCK_SIZE)));
+    blockNum = (1 + ((BLOCKSIZE - 9) < (msgLen % BLOCKSIZE)));
 
-    len_b = (m_tot_len + m_len) << 3;
-    pm_len = block_nb << 6;
+    lenB = (msgTotalLen + msgLen) << 3;
+    tempLen = blockNum << 6;
 
-    memset(m_block + m_len, 0, pm_len - m_len);
-    m_block[m_len] = 0x80;
+    memset(msgBlock + msgLen, 0, tempLen - msgLen);
+    msgBlock[msgLen] = 0x80;
 
-    WORDTOCHAR(len_b, m_block + pm_len - 4);
-    Transform(m_block, block_nb, sha256K, sha256H);
+    WORDTOCHAR(lenB, msgBlock + tempLen - 4);
+    Transform(msgBlock, blockNum, sha256K, sha256H);
 
     for (int i = 0; i < 8; i++)
         WORDTOCHAR(sha256H[i], &digest[i << 2]);
@@ -150,13 +149,12 @@ void Final(unsigned char* digest, WORD* sha256K, WORD* sha256H, unsigned char* m
 std::string Sha256(std::string input, WORD* sha256K)
 {
     unsigned char *digest = new unsigned char[32]();
-
-    unsigned char m_block[128];
-    WORD m_tot_len = 0, m_len = 0;
+    unsigned char msgBlock[128];
+    WORD msgTotalLen = 0, msgLen = 0;
     WORD sha256H[8]{ 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19 };
 
-    Update((unsigned char*)input.c_str(), input.length(), sha256K, sha256H, m_block, m_tot_len, m_len);
-    Final(digest, sha256K, sha256H, m_block, m_tot_len, m_len);
+    Update((unsigned char*)input.c_str(), input.length(), sha256K, sha256H, msgBlock, msgTotalLen, msgLen);
+    Final(digest, sha256K, sha256H, msgBlock, msgTotalLen, msgLen);
     
     char buf[65];
     buf[64] = 0;
