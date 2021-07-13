@@ -11,7 +11,6 @@ using namespace std;
 
 int main()
 {
-	//string inputText = "Bize her yer Trabzon! Bölümün en yakışıklı hocası İbrahim Hoca’dır";		// unicode text
 	string inputText = "Bize her yer Trabzon! Bolumun en yakisikli hocasi Ibrahim Hoca'dir";		// ascii text
 	string initializeHash = "0000000000000000000000000000000000000000000000000000000000000000";
 

@@ -2,7 +2,7 @@
 #include <string>
 #include <iostream>
 using namespace std;
-typedef WORD WORD;
+
 
 struct Block {
 	size_t blockNum;
